@@ -19,8 +19,7 @@
 (if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 (if (fboundp 'menu-bar-mode) (menu-bar-mode -1))
 ;; Let's leave the scroll bar around for now
-;;(if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-
+(if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 
 ;;Them stuff. For now just zenburn, but perhaps more later?
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
@@ -50,19 +49,25 @@
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize))
 
-
 ;; Keybindings
 (global-set-key "\C-x\C-m" 'execute-extended-command)
 (global-set-key "\C-c\C-m" 'execute-extended-command)
 (global-set-key "\C-w" 'backward-kill-word)
 (global-set-key "\C-x\C-k" 'kill-region)
 (global-set-key "\C-c\C-k" 'kill-region)
+(global-set-key (kbd "s-=") 'text-scale-increase)
+(global-set-key (kbd "s--") 'text-scale-decrease)
+(global-set-key (kbd "s-/") 'comment-or-uncomment-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
+(global-set-key (kbd "C--") 'er/contract-region)
 
 ;; Setup package managers
 (require 'package)
 (add-to-list 'package-archives 
     '("marmalade" .
       "http://marmalade-repo.org/packages/"))
+(add-to-list 'package-archives
+  '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (package-initialize)
 
 ;;========================================
@@ -81,6 +86,10 @@
 (require 'autopair)
 (autopair-global-mode t)
 
+(global-hl-line-mode t)
+(blink-cursor-mode 0)
+(delete-selection-mode t)
+
 (autoload 'markdown-mode "markdown-mode"
    "Major mode for editing Markdown files" t)
 (add-to-list 'auto-mode-alist '("\\.text\\'" . markdown-mode))
@@ -95,21 +104,66 @@
 
 
 ;; duplicate current line
-    (defun duplicate-current-line (&optional n)
-      "duplicate current line, make more than 1 copy given a numeric argument"
-      (interactive "p")
-      (save-excursion
-        (let ((nb (or n 1))
+(defun duplicate-current-line (&optional n)
+  "duplicate current line, make more than 1 copy given a numeric argument"
+  (interactive "p")
+  (save-excursion
+    (let ((nb (or n 1))
     	  (current-line (thing-at-point 'line)))
-          ;; when on last line, insert a newline first
-          (when (or (= 1 (forward-line 1)) (eq (point) (point-max)))
+      ;; when on last line, insert a newline first
+      (when (or (= 1 (forward-line 1)) (eq (point) (point-max)))
     	(insert "\n"))
-    
-          ;; now insert as many time as requested
-          (while (> n 0)
+      
+      ;; now insert as many time as requested
+      (while (> n 0)
     	(insert current-line)
     	(decf n)))))
-    
-    (global-set-key (kbd "s-d") 'duplicate-current-line)
+
+(global-set-key (kbd "s-d") 'duplicate-current-line)
+
+;; yari (with buttons) used to get ri docs
+(require 'yari)
+(defun ri-bind-key ()
+  "Bind f1 to yari."
+  (local-set-key [f1] 'yari))
+
+;; Ruby mode stuff
+(add-hook 'ruby-mode-hook 'ri-bind-key)
+(add-hook 'ruby-mode-hook (lambda()
+			    (autopair-mode -1)
+			    (linum-mode t)))
+(add-to-list 'auto-mode-alist '("\\.\\(rb\\|ru\\|builder\\|rake\\|thor\\|gemspec\\)\\'" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\\(rake\\|thor\\|guard\\|gem\\|cap\\|vagrant\\)file\\'" . ruby-mode))
+
+(require 'ruby-compilation)
+(require 'rinari)
+(require 'ruby-electric)
+(require 'rvm)
+(add-hook 'ruby-mode-hook
+          (lambda () (rvm-activate-corresponding-ruby)))
+
+(require 'rspec-mode)
+(custom-set-variables '(rspec-use-rake-flag nil))
+
+(ansi-color-for-comint-mode-on)
+
+;; Turn off alarm bells
+(setq ring-bell-function 'ignore)
+
+;; load nxhtml
+(load "~/.emacs.d/nxhtml/autostart.el")
+
+
+;; Workaround the annoying warnings:
+;;    Warning (mumamo-per-buffer-local-vars):
+;;    Already 'permanent-local t: buffer-file-name
+(when (and (>= emacs-major-version 24)
+           (>= emacs-minor-version 2))
+  (eval-after-load "mumamo"
+    '(setq mumamo-per-buffer-local-vars
+           (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
+
+
 
 ;;; init.el ends here
+

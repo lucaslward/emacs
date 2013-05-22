@@ -27,6 +27,35 @@
   "The directory containing all functions used in my emacs setup")
 (defvar luca-modes-dir (expand-file-name "modes" user-emacs-directory)
   "The directory containing all functions used in my emacs setup")
+(defvar luca-savefile-dir (expand-file-name "savefiles" user-emacs-directory)
+  "The directory containing all functions used in my emacs setup")
+
+(unless (file-exists-p luca-savefile-dir)
+  (make-directory luca-savefile-dir))
+
+;; store all backup and autosave files in the tmp dir
+(setq backup-directory-alist
+      `((".*" . ,temporary-file-directory)))
+(setq auto-save-file-name-transforms
+      `((".*" ,temporary-file-directory t)))
+
+;; revert buffers automatically when underlying files are changed externally
+(global-auto-revert-mode t)
+
+;; savehist keeps track of some history
+(require 'savehist)
+(setq savehist-additional-variables
+      ;; search entries
+      '(search ring regexp-search-ring)
+      ;; save every minute
+      savehist-autosave-interval 60
+      ;; keep the home clean
+      savehist-file (expand-file-name "savehist" luca-savefile-dir))
+(savehist-mode +1)
+
+;; use shift + arrow keys to switch between visible buffers
+(require 'windmove)
+(windmove-default-keybindings)
 
 ;; define a global varible for whether or not emacs is running on a mac
 (defvar is-mac (equal system-type 'darwin))
@@ -68,23 +97,20 @@
 ;; Setup package managers
 (require 'package)
 (add-to-list 'package-archives 
-    '("marmalade" .
-      "http://marmalade-repo.org/packages/"))
+	     '("marmalade" .
+	       "http://marmalade-repo.org/packages/"))
 (add-to-list 'package-archives
-  '("melpa" . "http://melpa.milkbox.net/packages/") t)
+	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (package-initialize)
 
-;; Functions (load all files in defuns-dir)
-;; I'm not sure how I feel about this. I pulled it from the Emacs
-;; Rocks guy. It feels like It should use more of the provide/require
-;; mechanism
-(dolist (file (directory-files luca-defuns-dir t "\\w+"))
-  (when (file-regular-p file)
-    (load file)))
+(defun luca-load-files (directory)
+  (dolist (file (directory-files directory t "\\w+"))
+    (when (file-regular-p file)
+      (load file))))
 
-(dolist (file (directory-files luca-modes-dir t "\\w+"))
-  (when (file-regular-p file)
-    (load file)))
+(luca-load-files luca-defuns-dir)
+(luca-load-files luca-core-dir)
+(luca-load-files luca-modes-dir)
 
 ;;========================================
 ;; start the emacsserver that listens to emacsclient
@@ -94,10 +120,6 @@
 (require 'ido)
 (require 'yasnippet)
 (require 'autopair)
-
-;; My personal stuff
-(require 'global-keybindings)
-(require 'mode-mappings)
 
 ;; Interactive do
 (ido-mode t)
@@ -129,6 +151,9 @@
 ;; y and n should be sufficient
 (fset 'yes-or-no-p 'y-or-n-p)
 
+(require 'drag-stuff)
+(drag-stuff-global-mode t)
+
 ;;=======================================
 ;; Add hooks
 
@@ -145,15 +170,45 @@
 (setq ring-bell-function 'ignore)
 
 ;; load nxhtml
-(load "~/.emacs.d/nxhtml/autostart.el")
 
-;; Workaround the annoying warnings:
-;;    Warning (mumamo-per-buffer-local-vars):
-;;    Already 'permanent-local t: buffer-file-name
-(when (and (>= emacs-major-version 24)
-           (>= emacs-minor-version 2))
-  (eval-after-load "mumamo"
-    '(setq mumamo-per-buffer-local-vars
-           (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
+(defadvice switch-to-buffer (before save-buffer-now activate)
+  "Invoke `prelude-auto-save-command' before `switch-to-window'."
+  (luca-auto-save-command))
+(defadvice other-window (before other-window-now activate)
+  "Invoke `luca-auto-save-command' before `other-window'."
+  (luca-auto-save-command))
+(defadvice windmove-up (before other-window-now activate)
+  "Invoke `luca-auto-save-command' before `windmove-up'."
+  (luca-auto-save-command))
+(defadvice windmove-down (before other-window-now activate)
+  "Invoke `luca-auto-save-command' before `windmove-down'."
+  (luca-auto-save-command))
+(defadvice windmove-left (before other-window-now activate)
+  "Invoke `luca-auto-save-command' before `windmove-left'."
+  (luca-auto-save-command))
+(defadvice windmove-right (before other-window-now activate)
+  "Invoke `luca-auto-save-command' before `windmove-right'."
+  (luca-auto-save-command))
+
+(add-hook 'mouse-leave-buffer-hook 'luca-auto-save-command)
+
+(setq hippie-expand-try-functions-list '(try-expand-dabbrev
+                                         try-expand-dabbrev-all-buffers
+                                         try-expand-dabbrev-from-kill
+                                         try-complete-file-name-partially
+                                         try-complete-file-name
+                                         try-expand-all-abbrevs
+                                         try-expand-list
+                                         try-expand-line
+                                         try-complete-lisp-symbol-partially
+                                         try-complete-lisp-symbol))
+
+(winner-mode t)
+
+;; set up unicode
+(prefer-coding-system       'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
 
 ;;; init.el ends here

@@ -26,7 +26,7 @@
 (global-set-key (kbd "C--") 'er/contract-region)
 (global-set-key (kbd "s-d") 'luca-duplicate-current-line-or-region)
 (global-set-key (kbd "C-\\") 'luca-indent-region-or-buffer)
-(global-set-key (kbd "M-/") 'hippie-expand)
+(global-set-key (kbd "C-.") 'hippie-expand)
 (global-set-key (kbd "<C-tab>") 'winner-undo)
 
 ;;; global-keybindings.el ends here

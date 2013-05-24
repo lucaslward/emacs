@@ -211,4 +211,7 @@
 (set-terminal-coding-system 'utf-8)
 (set-keyboard-coding-system 'utf-8)
 
+(global-undo-tree-mode t)
+
+(require 'magit)
 ;;; init.el ends here

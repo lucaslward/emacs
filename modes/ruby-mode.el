@@ -19,3 +19,7 @@
           (lambda () (rvm-activate-corresponding-ruby)))
 
 (custom-set-variables '(rspec-use-rake-flag nil))
+
+(wrap-region-add-wrapper "/" "/" nil 'ruby-mode)
+(wrap-region-add-wrapper "#{" "}" "#" 'ruby-mode)
+

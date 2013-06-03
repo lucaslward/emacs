@@ -69,11 +69,6 @@
 ;; Let's leave the scroll bar around for now
 (if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 
-;; full screen on startup - I got this from emacs wiki. It said it was
-;; specific to OS X, so if this file is used on Linux, it may need
-;; something different
-(when is-mac (set-frame-parameter nil 'fullscreen 'fullboth))
-
 ;; Setup load path
 (add-to-list 'load-path user-emacs-directory)
 (add-to-list 'load-path luca-core-dir)
@@ -83,7 +78,7 @@
 ;; Add the themes directory to the custom them load path
 (add-to-list 'custom-theme-load-path (expand-file-name "themes" user-emacs-directory))
 ;; Load zenburn theme by default
-(load-theme 'zenburn t)
+
 
 ;; Everything from 'emacs customization' should be in a separate file.
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
@@ -96,21 +91,19 @@
 
 ;; Setup package managers
 (require 'package)
-(add-to-list 'package-archives 
+(add-to-list 'package-archives
 	     '("marmalade" .
 	       "http://marmalade-repo.org/packages/"))
 (add-to-list 'package-archives
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (package-initialize)
 
+(load-theme 'solarized-dark t)
+
 (defun luca-load-files (directory)
   (dolist (file (directory-files directory t "\\w+"))
     (when (file-regular-p file)
       (load file))))
-
-(luca-load-files luca-defuns-dir)
-(luca-load-files luca-core-dir)
-(luca-load-files luca-modes-dir)
 
 ;;========================================
 ;; start the emacsserver that listens to emacsclient
@@ -132,6 +125,7 @@
 
 ;; Turn on highlight line
 (global-hl-line-mode t)
+(set-face-attribute hl-line-face nil :underline nil)
 
 ;; Turn on line numbers for all files
 (global-linum-mode t)
@@ -214,4 +208,51 @@
 (global-undo-tree-mode t)
 
 (require 'magit)
+
+;; Clean stale buffers
+(require 'midnight)
+
+(setq-default fill-column 80)
+
+;; Turn on the disabled stuff
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
+(put 'narrow-to-defun 'disabled nil)
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+
+(require 'volatile-highlights)
+(volatile-highlights-mode t)
+
+(require 'git-gutter-fringe)
+
+;; Hide some minor modes. Because I didn't pass anything to it, it just hides it
+;; completely. You can see what the mode line would look like with everything
+;; turned on with M-x diminished modes
+(require 'diminish)
+(eval-after-load "git-gutter-fringe" '(diminish 'git-gutter-mode))
+(eval-after-load "undo-tree" '(diminish 'undo-tree-mode))
+(eval-after-load "drag-stuff" '(diminish 'drag-stuff-mode))
+(eval-after-load "volatile-highlights" '(diminish 'volatile-highlights-mode))
+(eval-after-load "autopair" '(diminish 'autopair-mode))
+
+(require 'wrap-region)
+(wrap-region-global-mode t)
+
+;; meaningful names for buffers with the same name
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
+(setq uniquify-separator "/")
+(setq uniquify-after-kill-buffer-p t)    ; rename after killing uniquified
+(setq uniquify-ignore-buffers-re "^\\*") ; don't muck with special buffers
+
+(luca-load-files luca-core-dir)
+(luca-load-files luca-defuns-dir)
+(luca-load-files luca-modes-dir)
+
+;; full screen on startup - I got this from emacs wiki. It said it was
+;; specific to OS X, so if this file is used on Linux, it may need
+;; something different
+(when is-mac (set-frame-parameter nil 'fullscreen 'fullboth))
+
 ;;; init.el ends here

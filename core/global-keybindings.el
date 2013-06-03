@@ -14,6 +14,7 @@
 
 ;; All keybindings I use should be in here
 (global-set-key "\C-x\C-m" 'execute-extended-command)
+(global-set-key (kbd "C-x m") 'execute-extended-command)
 (global-set-key "\C-c\C-m" 'execute-extended-command)
 (global-set-key "\C-w" 'backward-kill-word)
 ;; Change kill-line to work for both lines and regions
